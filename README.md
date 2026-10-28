@@ -33,6 +33,17 @@ gradle :api:test
 gradle :back:jar        # -> back/build/libs/back-<version>.jar (core plugin)
 ```
 
+## Release packaging
+
+```bash
+npm run build-common && npm run build-front   # -> back/public
+gradle :back:releaseZip                        # -> back/build/dist/boardgame-core-<v>.zip
+```
+
+The asset contains `back/core.jar` (dual-format: class files + `classes.dex` + resources + service
+descriptor) and `front/**`. `d8` is taken from the Android SDK (`local.properties` / `ANDROID_HOME`);
+the task fails with a clear message when the front build or the SDK is missing.
+
 ## Front build
 
 ```bash
