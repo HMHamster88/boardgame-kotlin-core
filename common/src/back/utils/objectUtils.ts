@@ -1,0 +1,82 @@
+export function isObject(value: any) {
+    var type = typeof value;
+    return value != null && (type == 'object' || type == 'function');
+}
+
+export function setValueByPath(
+    obj: any,
+    path: string,
+    value: any
+): void {
+    const keys = path.split(/[.[\]]/).filter(Boolean)
+    let current: any = obj
+
+    for (let i = 0; i < keys.length - 1; i++) {
+        const key = keys[i]
+
+        if (!(key in current) || typeof current[key] !== 'object' || current[key] === null) {
+            current[key] = {}
+        }
+        current = current[key]
+    }
+
+    const lastKey = keys[keys.length - 1]
+    current[lastKey] = value
+}
+
+export function getValueByPath(
+    obj: any,
+    path: string
+): any {
+    return path.split(/[.[\]]/).filter(Boolean).reduce((acc: any, key: string) => {
+        return acc && acc[key] !== undefined ? acc[key] : undefined;
+    }, obj);
+}
+
+export function deepMerge(target: any, source: any) {
+
+    function merge(tgt: any, src: any) {
+        if (typeof tgt !== 'object' || tgt === null || typeof src !== 'object' || src === null) {
+            return src;
+        }
+
+        for (const key of Object.keys(src)) {
+            if (src[key] !== undefined) {
+                if (tgt[key] && typeof tgt[key] === 'object' && typeof src[key] === 'object') {
+                    tgt[key] = merge(tgt[key], src[key]);
+                } else {
+                    tgt[key] = src[key];
+                }
+            }
+        }
+        return tgt;
+    }
+
+    return merge(target, source);
+}
+
+export interface VersionedObject {
+    version: number
+}
+
+export interface ObjectMigration<T extends VersionedObject> {
+    version: number
+    migrate: (obj: T) => T
+}
+
+export function migrateObject<T extends VersionedObject>(obj: T, migrations: ObjectMigration<T>[]): T {
+    for (let migration of migrations) {
+        if (obj.version < migration.version) {
+            obj = migration.migrate(obj)
+            obj.version = migration.version
+        }
+    }
+    return obj
+}
+
+export function createOrMigrateObject<T extends VersionedObject>(obj: T | undefined, migrations: ObjectMigration<T>[], initalizer: () => T): T {
+    if (!obj) {
+        return initalizer()
+    }
+    return migrateObject(obj, migrations)
+}

@@ -1,0 +1,17 @@
+{
+  "name": "boardgame-kotlin-core",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Kotlin core: protocol API, portable core plugin and the Vue SPA",
+  "homepage": "https://github.com/HMHamster88/boardgame-kotlin-core",
+  "type": "module",
+  "workspaces": [
+    "common",
+    "front"
+  ],
+  "scripts": {
+    "build-common": "npm run build -w common",
+    "build-front": "npm run build -w front",
+    "build-all": "npm run build-common && npm run build-front"
+  }
+}

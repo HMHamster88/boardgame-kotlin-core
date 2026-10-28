@@ -1,0 +1,70 @@
+import { ConnectStatus, type Game, type GameType, type User } from 'boardgame-web-common/back'
+import type { GameFrontService, PlayerGameInstanceSettings, PlayerGameSettings } from 'boardgame-web-common/front'
+import { defineStore } from 'pinia'
+
+
+export interface Settings {
+    locale: string,
+    soundsVolume: number,
+    vibration: boolean,
+    debugFront: boolean
+}
+
+type PlayerGameSettingsMap = {
+    [key: string]: PlayerGameSettings
+}
+
+type PlayerGameInstanceSettingsMap = {
+    [key: string]: PlayerGameInstanceSettings
+}
+
+interface LocalStore {
+    user: User,
+    settings: Settings,
+    playerGameSettings: PlayerGameSettingsMap
+    playerGameInstaceSettings: PlayerGameInstanceSettingsMap
+}
+
+export const useLocalStore = defineStore(
+    'localStore',
+    {
+        state: (): LocalStore => ({
+            user: {
+                id: '',
+                name: 'User',
+                color: '#FF0000',
+                roles: []
+            },
+            settings: {
+                locale: 'en',
+                soundsVolume: 0.5,
+                vibration: true,
+                debugFront: false
+            },
+            playerGameSettings: {},
+            playerGameInstaceSettings: {}
+        }),
+        persist: true
+    }
+)
+
+interface MemoryLocalStore {
+    connectStatus: ConnectStatus,
+    gameTypes: GameType[],
+    games: Game[],
+    showStatistics: boolean,
+    gameService: GameFrontService | undefined
+}
+
+export const useMemoryLocalStore = defineStore(
+    'localStore',
+    {
+        state: (): MemoryLocalStore => ({
+            connectStatus: ConnectStatus.DISCONNECTED,
+            gameTypes: [],
+            games: [],
+            showStatistics: false,
+            gameService: undefined
+        }),
+    }
+)
