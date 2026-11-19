@@ -261,7 +261,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
             }
         } ?: error("failed to download $downloadUrl")
 
-        val directory = downloadUrl.substringAfterLast('/').substringBeforeLast('.').replace('.', '_')
+        val directory = moduleDirectoryName(downloadUrl)
         val gamesDir = File(host.platform.dataDir, "games-modules").apply { mkdirs() }
         val target = File(gamesDir, directory)
         val temp = File(gamesDir, "$directory.tmp")
