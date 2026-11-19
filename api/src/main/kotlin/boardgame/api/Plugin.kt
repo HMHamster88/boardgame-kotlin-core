@@ -121,6 +121,9 @@ interface GameContext {
 
     /** Replaces game settings during an action (e.g. a newly generated map). Default ignores it. */
     fun updateSettings(value: JsonElement) {}
+
+    /** Publishes the current public state immediately (e.g. a dice-animation frame). Default no-op. */
+    fun publishPublicState() {}
     fun notify(peerId: String?, message: String, params: JsonElement? = null)
 }
 

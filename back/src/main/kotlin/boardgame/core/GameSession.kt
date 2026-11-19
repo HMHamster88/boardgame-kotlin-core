@@ -214,8 +214,13 @@ class GameSession(
         val beforeGame = gameTree()
         val beforeSettings = settings
         val beforeState = state
+        var lastPublic: JsonElement = beforeState?.publicState ?: JsonNull
         val context = Context(game, settings, beforeState)
         context.onNotify { peerId, message, params -> notify(peerId, message, params) }
+        context.onPublishPublic { current ->
+            sendDiffLocked("gamePublicState", lastPublic, current)
+            lastPublic = current
+        }
         val response = service.performAction(context, action, playerId)
         state = context.snapshot()
         settings = context.settingsSnapshot()
@@ -224,7 +229,7 @@ class GameSession(
         sendDiffLocked("gameSettings", beforeSettings, settings)
         val current = state
         if (current != null) {
-            sendDiffLocked("gamePublicState", beforeState?.publicState ?: JsonNull, current.publicState)
+            sendDiffLocked("gamePublicState", lastPublic, current.publicState)
             diffPrivateLocked(beforeState, current)
         }
         persistIfChanged(beforeGame, beforeSettings, beforeState)
@@ -418,9 +423,14 @@ class GameSession(
         private var privateValue: JsonElement? = initial?.privateState
 
         private var notifyHandler: ((String?, String, JsonElement?) -> Unit)? = null
+        private var publishHandler: ((JsonElement) -> Unit)? = null
 
         fun onNotify(handler: (String?, String, JsonElement?) -> Unit) {
             notifyHandler = handler
+        }
+
+        fun onPublishPublic(handler: (JsonElement) -> Unit) {
+            publishHandler = handler
         }
 
         override val settings: JsonObject get() = settingsValue
@@ -437,6 +447,10 @@ class GameSession(
 
         override fun updateSettings(value: JsonElement) {
             settingsValue = value as? JsonObject ?: JsonObject(emptyMap())
+        }
+
+        override fun publishPublicState() {
+            publishHandler?.invoke(publicValue)
         }
 
         fun settingsSnapshot(): JsonObject = settingsValue
