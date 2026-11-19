@@ -44,24 +44,26 @@ The asset contains `back/core.jar` (dual-format: class files + `classes.dex` + r
 descriptor) and `front/**`. `d8` is taken from the Android SDK (`local.properties` / `ANDROID_HOME`);
 the task fails with a clear message when the front build or the SDK is missing.
 
-## TypeScript protocol codegen (validation-only)
+## TypeScript protocol codegen
 
 ```bash
 gradle :api:generateTs   # -> common/src/back/generated/protocol.ts (from Kotlin DTOs)
 npm run typecheck -w common
 ```
 
-`common/src/back/validate.ts` asserts, at the type level, that the hand-written `dto.ts` /
-`wsMessages.ts` are compatible with the generated wire types. Known representation differences are
-asserted explicitly (enum status → `string`, `created` → ISO `string`, `JsonElement` → `any`,
-optional nullable fields). The hand-written files remain the imported source until parity is proven.
+`common/src/back/dto.ts` re-exports the generated wire DTOs (`User`, `Game`, `Player`,
+`GameType`, `GameStaticSettings`); `wsMessages.ts` re-exports the generated server→client messages.
+Still hand-written: request messages (the core parses them as JSON), the plugin SPI, the base
+state types, and the generic `GameState<P, S>` / `FullGameData<P, S>` wrappers that preserve
+game-specific state typing in the admin/game views.
 
 After changing `:api` DTOs:
 
 ```bash
 gradle :api:generateTs
 git diff --exit-code common/src/back/generated/protocol.ts   # CI drift guard
-npm run typecheck -w common
+npm run build-common
+npm run build-front
 ```
 
 ## Front build

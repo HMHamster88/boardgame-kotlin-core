@@ -1,6 +1,10 @@
 import type { ObjectSync } from "./objectSync"
 import type { GameAction } from "./wsMessages"
 
+// Wire DTOs are generated from the Kotlin `:api` models (`gradle :api:generateTs`).
+import type { Game, GameStaticSettings, GameType, Player, User } from "./generated/protocol.js"
+export type { Game, GameStaticSettings, GameType, Player, User }
+
 export enum ConnectStatus {
     CONNECTING = 'CONNECTING',
     CONNECTED = 'CONNECTED',
@@ -9,19 +13,6 @@ export enum ConnectStatus {
 
 export enum UserRole {
     ADMIN = 'ADMIN'
-}
-
-export interface User {
-    id: string
-    name: string
-    color: string,
-    roles: UserRole[]
-}
-
-export interface GameType {
-    type: string
-    localizedName: any,
-    diectoryName: string
 }
 
 export enum GameStatusEnum {
@@ -35,11 +26,6 @@ export interface CreateGameProps {
     name: string
     type: string
     owner: string
-}
-
-export interface GameStaticSettings {
-    minPlayers: number
-    maxPlayers: number
 }
 
 export interface GameSettings {
@@ -78,24 +64,6 @@ export interface GameBackService {
 }
 
 
-export interface Player {
-    userId: string
-    name: string
-    color: string
-    online: boolean
-    isBot: boolean
-}
-
-export interface Game {
-    id: string;
-    owner: string
-    name: string
-    type: string
-    players: Player[]
-    status: GameStatusEnum
-    created: string
-}
-
 export interface GameBackModule {
     getGameBackService: () => GameBackService;
 }
@@ -124,8 +92,12 @@ export interface GamePrivateState {
     playersStates: PlayerPrivateState[] | null
 }
 
-export interface GameState {
+/**
+ * Generic so game fronts can narrow the states: `GameState<CahGamePublicState, CahGamePrivateState>`.
+ * The wire shape is generated (`generated/protocol.ts`); the generics keep the typed admin/game views.
+ */
+export interface GameState<P = GamePublicState, S = GamePrivateState> {
     id: string // equals to game id
-    publicState: GamePublicState
-    privateState: GamePrivateState | null
+    publicState: P
+    privateState?: S
 }

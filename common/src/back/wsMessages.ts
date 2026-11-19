@@ -1,24 +1,33 @@
-import type { CreateGameProps, Game, GameSettings, GameState, GameType, Player, User } from "./dto.js"
+import type {
+    CreateGameProps,
+    Game,
+    GamePrivateState,
+    GamePublicState,
+    GameSettings,
+    GameState,
+    Player,
+    User
+} from "./dto.js"
 import type { TypedMessage } from "./messageHandler.js"
+
+// Server -> client messages generated from the Kotlin models.
+export type {
+    AllGamesResponse,
+    GameCreatedMessage,
+    GameDeletedMessage,
+    GameMessageResponse,
+    HandshakeResponse,
+    NotifyGameMessage,
+    UpdateFullGameDataResponse
+} from "./generated/protocol.js"
 
 export interface HandshakeRequest extends TypedMessage {
     type: 'HandshakeRequest'
     userId: string
 }
 
-export interface HandshakeResponse extends TypedMessage {
-    type: 'HandshakeResponse'
-    user: User
-    gameTypes: GameType[]
-}
-
 export interface GetAllGamesRequest extends TypedMessage {
     type: 'GetAllGamesRequest'
-}
-
-export interface AllGamesResponse extends TypedMessage {
-    type: 'AllGamesResponse'
-    games: Game[]
 }
 
 export interface GetGameRequest extends TypedMessage {
@@ -36,18 +45,8 @@ export interface CreateGameRequest extends TypedMessage {
     props: CreateGameProps
 }
 
-export interface GameCreatedMessage extends TypedMessage {
-    type: 'GameCreatedMessage'
-    game: Game
-}
-
 export interface DeleteGameRequest extends TypedMessage {
     type: 'DeleteGameRequest'
-    gameId: string
-}
-
-export interface GameDeletedMessage extends TypedMessage {
-    type: 'GameDeletedMessage'
     gameId: string
 }
 
@@ -66,20 +65,9 @@ export interface GameMessage {
     type: string
 }
 
-export interface GameMessageResponse extends GameMessage {
-    type: 'GameMessageResponse'
-    response: any
-}
-
 export interface GameInfoMessage extends GameMessage {
     type: 'GameInfoMessage',
     game: Game
-}
-
-export interface NotifyGameMessage extends GameMessage {
-    type: 'NotifyGameMessage',
-    message: string,
-    messageParams?: any
 }
 
 export interface ErorrGameMessage extends GameMessage {
@@ -129,10 +117,10 @@ export interface GetAdminGameMessage extends GameMessage {
     gameId: string
 }
 
-export interface FullGameData {
+export interface FullGameData<P = GamePublicState, S = GamePrivateState> {
     settings: GameSettings
     game: Game
-    gameState: GameState | undefined
+    gameState?: GameState<P, S>
 }
 
 export interface AdminGameMessageResponse extends GameMessage {
@@ -143,11 +131,6 @@ export interface AdminGameMessageResponse extends GameMessage {
 export interface UpdateFullGameDataMessage extends GameMessage {
     type: 'UpdateFullGameDataMessage'
     fullGameData: FullGameData
-}
-
-export interface UpdateFullGameDataResponse extends GameMessage {
-    type: 'UpdateFullGameDataResponse'
-    error: string | undefined
 }
 
 export interface ForceUpdateGameData extends GameMessage {
