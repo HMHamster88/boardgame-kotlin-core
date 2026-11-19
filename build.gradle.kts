@@ -5,7 +5,8 @@ plugins {
 
 allprojects {
     group = "com.hmhamster"
-    version = "0.1.0"
+    // Release override: gradlew releaseBuild -PcoreVersion=0.2.0
+    version = providers.gradleProperty("coreVersion").getOrElse("0.1.0")
 }
 
 /**

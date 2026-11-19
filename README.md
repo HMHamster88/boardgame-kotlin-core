@@ -33,6 +33,19 @@ gradle :api:test
 gradle :back:jar        # -> back/build/libs/back-<version>.jar (core plugin)
 ```
 
+## Version
+
+`version = "0.1.0"` in `build.gradle.kts` drives the plugin jar name, the `version.properties` inside
+the jar, the `boardgame-core-<version>.zip` asset and the `com.hmhamster:boardgame-api` coordinate.
+Override it for a release without editing the file:
+
+```bash
+gradle releaseBuild "-PcoreVersion=0.2.0"
+```
+
+Tag the GitHub release `v<version>` (the launcher strips the `v` and compares it with the installed
+`version.properties`; a mismatch makes it re-download on every update check).
+
 ## Release packaging
 
 ```bash
