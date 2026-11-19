@@ -75,13 +75,16 @@ npm run build-front
 ## Development build
 
 ```bash
-gradle devBuild   # :api:generateTs + :back:jar
+gradle devBuild   # :api:generateTs + npm run build-all + :back:jar
 ```
 
-The launcher's `DEV=true` watcher reloads the core as soon as
-`back/build/libs/back-0.1.0.jar` changes. IntelliJ IDEA: the shared **Build core (dev)** run
-configuration (`.idea/runConfigurations`) runs the same task. Front changes still use
-`npm run build-front` above.
+This regenerates the protocol types, builds the common package and Vue front into `back/public`, and
+builds the core plugin jar. The launcher's `DEV=true` watcher reloads the core as soon as
+`back/build/libs/back-0.1.0.jar` changes; the rebuilt front is served directly (refresh the page).
+Requires `npm` on `PATH`; for back-only iterations run `gradle :back:jar` to skip the front build.
+
+IntelliJ IDEA: the shared **Build core (dev)** run configuration (`.idea/runConfigurations`) runs
+`devBuild`.
 
 ## Front build
 
