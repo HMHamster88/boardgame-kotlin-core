@@ -126,6 +126,9 @@ class GameSession(
     // ---------------------------------------------------------------- attach
 
     private fun attachLocked(peer: Peer) {
+        // Refresh before the peer is registered: existing peers get the diff, the new peer gets the
+        // updated name in its full snapshot (never a diff before the full state).
+        syncPlayerProfileLocked(peer.userId)
         peers[peer.userId] = peer
         sendFull(peer, "game", gameTree())
         sendFull(peer, "gameSettings", settings)
@@ -170,7 +173,16 @@ class GameSession(
         if (userId != peer.userId) return
         val name = payload.str("name") ?: return
         val color = payload.str("color") ?: return
+        setPlayerProfileLocked(userId, name, color)
+    }
 
+    /** Picks up a profile changed while away from the game (the request is only seen by the lobby). */
+    private fun syncPlayerProfileLocked(userId: String) {
+        val user = userProvider(userId) ?: return
+        setPlayerProfileLocked(userId, user.name, user.color)
+    }
+
+    private fun setPlayerProfileLocked(userId: String, name: String, color: String) {
         val index = game.players.indexOfFirst { it.userId == userId }
         if (index < 0) return
         val player = game.players[index]
