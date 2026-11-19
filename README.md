@@ -51,11 +51,13 @@ gradle :api:generateTs   # -> common/src/back/generated/protocol.ts (from Kotlin
 npm run typecheck -w common
 ```
 
-`common/src/back/dto.ts` re-exports the generated wire DTOs (`User`, `Game`, `Player`,
-`GameType`, `GameStaticSettings`); `wsMessages.ts` re-exports the generated server→client messages.
-Still hand-written: request messages (the core parses them as JSON), the plugin SPI, the base
-state types, and the generic `GameState<P, S>` / `FullGameData<P, S>` wrappers that preserve
-game-specific state typing in the admin/game views.
+`common/src/back/dto.ts` and `wsMessages.ts` are now **pure re-exports** of the generated protocol:
+DTOs, base models (`GameSettings`, `GamePublicState`, …), requests, responses and sync messages.
+Only front-only pieces stay hand-written: the `UserRole` / `GameStatusEnum` / `ConnectStatus`
+enums, the front-facing plugin SPI, and the `TypedMessage` / `ObjectSync` helpers.
+
+`GameState.publicState` / `FullGameData.settings` are `any` in the generated protocol (the wire does
+not carry typed state); game fronts use their own generated state types (e.g. `CahGamePublicState`).
 
 After changing `:api` DTOs:
 
