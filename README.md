@@ -59,6 +59,9 @@ Missing modules are downloaded from their latest GitHub release; when the host e
 (the launcher defaults `CHECK_FOR_UPDATES` to true outside dev mode) installed ones are updated too.
 `SKIP_DEFAULT_GAMES=1` disables the step (offline/tests).
 
+Modules install as `games-modules/<module>/<version>/` (same shape as `core/<version>/`); the loader
+picks the newest version and still accepts the old `games-modules/<module>/back` layout.
+
 Installs are written next to any running jar under a unique name and the newest jar is used, so an
 update never tries to replace a jar the JVM has open (Windows).
 

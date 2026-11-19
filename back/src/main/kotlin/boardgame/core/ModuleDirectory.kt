@@ -1,11 +1,11 @@
 package boardgame.core
 
 /**
- * Picks the install directory for a game module from its release asset URL.
+ * Picks the module name for a game module from its release asset URL.
  *
- * Release assets are versioned (`cah-0.1.0.zip`), but the extracted directory (and therefore the
- * front URL, `/games-modules/<directory>/front/...`) must stay stable across updates: strip a
- * trailing version (`-0.1.0`, `-v1.2.3`, `-0.1.0-SNAPSHOT`).
+ * Release assets are versioned (`cah-0.1.0.zip`): the trailing version is stripped to get the module
+ * name, and the core installs the archive as `games-modules/<module>/<version>/` (the version comes
+ * from the release tag). The front URL is `/games-modules/<module>/<version>/front/...`.
  */
 internal fun moduleDirectoryName(downloadUrl: String): String {
     val base = downloadUrl.substringAfterLast('/').substringBeforeLast('.')

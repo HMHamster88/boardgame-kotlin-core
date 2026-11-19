@@ -217,31 +217,56 @@ class CoreImpl(private val host: HostServices) : GameCore {
 
     // ---------------------------------------------------------------- modules
 
+    private data class ModuleCandidate(val directory: String, val backDir: File)
+
+    /**
+     * New layout is `games-modules/<module>/<version>/back` with the jars inside (same shape as
+     * `core/<version>/`); legacy `games-modules/<module>/back` is still accepted. Newest version wins.
+     */
+    private fun moduleCandidates(moduleDir: File): List<ModuleCandidate> {
+        fun hasJar(backDir: File) =
+            backDir.listFiles { it.isFile && it.extension == "jar" }?.isNotEmpty() == true
+
+        val versioned = moduleDir.listFiles { it.isDirectory }
+            ?.filter { hasJar(File(it, "back")) }
+            ?.sortedWith { a, b -> Semver.compare(b.name, a.name) }
+            ?.map { ModuleCandidate("${moduleDir.name}/${it.name}", File(it, "back")) }
+            .orEmpty()
+        if (versioned.isNotEmpty()) return versioned
+
+        val legacyBack = File(moduleDir, "back")
+        return if (hasJar(legacyBack)) listOf(ModuleCandidate(moduleDir.name, legacyBack)) else emptyList()
+    }
+
     private fun loadInstalledModules() {
         val gamesDir = File(host.platform.dataDir, "games-modules")
         if (!gamesDir.isDirectory) return
         gamesDir.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }?.forEach { moduleDir ->
-            val backDir = File(moduleDir, "back")
-            // Newest jar wins: installs use unique names so a loaded jar is never replaced.
-            val jars = backDir.listFiles { it.isFile && it.extension == "jar" }
-                ?.sortedByDescending { it.lastModified() }
-                .orEmpty()
-            val jar = jars.firstOrNull() ?: return@forEach
-            jars.drop(1).forEach { stale -> stale.delete() }
-            runCatching {
-                val module = host.loadPlugin(jar, GameBackModule::class.java)
-                val service = module.createService()
-                val info = GameModuleInfo(
-                    type = service.type,
-                    version = service.version,
-                    apiVersion = 1,
-                    directory = moduleDir.name,
-                    homepage = service.homepage
-                )
-                services[service.type] = service
-                modules[service.type] = info
-                log("Loaded module ${info.type} ${info.version} from ${moduleDir.name}")
-            }.onFailure { log("Failed to load module ${moduleDir.name}: ${it.message}") }
+            for (candidate in moduleCandidates(moduleDir)) {
+                // Newest jar wins: installs use unique names so a loaded jar is never replaced.
+                val jars = candidate.backDir.listFiles { it.isFile && it.extension == "jar" }
+                    ?.sortedByDescending { it.lastModified() }
+                    .orEmpty()
+                val jar = jars.firstOrNull() ?: continue
+                jars.drop(1).forEach { stale -> stale.delete() }
+                val loaded = runCatching {
+                    val module = host.loadPlugin(jar, GameBackModule::class.java)
+                    val service = module.createService()
+                    val info = GameModuleInfo(
+                        type = service.type,
+                        version = service.version,
+                        apiVersion = 1,
+                        directory = candidate.directory,
+                        homepage = service.homepage
+                    )
+                    services[service.type] = service
+                    modules[service.type] = info
+                    log("Loaded module ${info.type} ${info.version} from ${candidate.directory}")
+                }.onFailure {
+                    log("Failed to load module ${candidate.directory}: ${it.message}")
+                }
+                if (loaded.isSuccess) break
+            }
         }
     }
 
@@ -310,10 +335,15 @@ class CoreImpl(private val host: HostServices) : GameCore {
             }
         } ?: error("failed to download $downloadUrl")
 
-        val directory = moduleDirectoryName(downloadUrl)
+        val moduleName = moduleDirectoryName(downloadUrl)
+        val version = tag.removePrefix("v")
+            .replace(Regex("[^A-Za-z0-9._-]"), "_")
+            .ifBlank { "0.0.0" }
+        val directory = "$moduleName/$version"
         val gamesDir = File(host.platform.dataDir, "games-modules").apply { mkdirs() }
-        val target = File(gamesDir, directory)
-        val temp = File(gamesDir, "$directory.tmp")
+        val moduleRoot = File(gamesDir, moduleName).apply { mkdirs() }
+        val target = File(moduleRoot, version)
+        val temp = File(moduleRoot, ".$version.tmp")
         if (temp.exists()) temp.deleteRecursively()
         temp.mkdirs()
         unzip(bytes, temp)
@@ -323,7 +353,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
         require(sourceJars.isNotEmpty()) { "installed module has no back/*.jar" }
         val targetBack = File(target, "back").apply { mkdirs() }
         // Unique file name: the currently loaded jar cannot be replaced on Windows.
-        val installedJar = File(targetBack, "$directory-${UUID.randomUUID()}.jar")
+        val installedJar = File(targetBack, "$moduleName-${UUID.randomUUID()}.jar")
         sourceJars.first().copyTo(installedJar, overwrite = true)
         sourceBack.listFiles { it.isFile && it.extension != "jar" }?.forEach { file ->
             file.copyTo(File(targetBack, file.name), overwrite = true)
