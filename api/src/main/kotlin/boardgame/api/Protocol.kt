@@ -2,6 +2,7 @@ package boardgame.api
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import boardgame.api.codegen.GenerateTs
 
 /** Wire protocol DTOs. Field names are part of the contract — see docs/protocol.md. */
 
@@ -15,6 +16,7 @@ object Roles {
     const val ADMIN = "ADMIN"
 }
 
+@GenerateTs
 @Serializable
 data class User(
     val id: String,
@@ -23,6 +25,7 @@ data class User(
     val roles: List<String> = emptyList()
 )
 
+@GenerateTs
 @Serializable
 data class GameType(
     val type: String,
@@ -30,6 +33,7 @@ data class GameType(
     val directoryName: String = ""
 )
 
+@GenerateTs
 @Serializable
 data class Player(
     val userId: String,
@@ -39,6 +43,7 @@ data class Player(
     val isBot: Boolean
 )
 
+@GenerateTs
 @Serializable
 data class Game(
     val id: String,
@@ -50,10 +55,12 @@ data class Game(
     val created: String
 )
 
+@GenerateTs
 @Serializable
 data class GameStaticSettings(val minPlayers: Int, val maxPlayers: Int)
 
 /** What a game module returns from startGame / performAction. */
+@GenerateTs(name = "GameState")
 @Serializable
 data class GameStatePayload(
     val id: String,
@@ -61,6 +68,7 @@ data class GameStatePayload(
     val privateState: JsonElement? = null
 )
 
+@GenerateTs
 @Serializable
 data class FullGameData(
     val settings: JsonElement,
@@ -68,9 +76,11 @@ data class FullGameData(
     val gameState: GameStatePayload? = null
 )
 
+@GenerateTs
 @Serializable
 data class SyncPart(val path: String? = null, val value: JsonElement)
 
+@GenerateTs(typeLiteral = "ObjectSyncMessage")
 @Serializable
 data class ObjectSyncMessage(
     val type: String = "ObjectSyncMessage",
@@ -78,6 +88,7 @@ data class ObjectSyncMessage(
     val parts: List<SyncPart>
 )
 
+@GenerateTs(typeLiteral = "HandshakeResponse")
 @Serializable
 data class HandshakeResponse(
     val type: String = "HandshakeResponse",
@@ -85,24 +96,28 @@ data class HandshakeResponse(
     val gameTypes: List<GameType>
 )
 
+@GenerateTs(typeLiteral = "AllGamesResponse")
 @Serializable
 data class AllGamesResponse(
     val type: String = "AllGamesResponse",
     val games: List<Game>
 )
 
+@GenerateTs(typeLiteral = "GameCreatedMessage")
 @Serializable
 data class GameCreatedMessage(
     val type: String = "GameCreatedMessage",
     val game: Game
 )
 
+@GenerateTs(typeLiteral = "GameDeletedMessage")
 @Serializable
 data class GameDeletedMessage(
     val type: String = "GameDeletedMessage",
     val gameId: String
 )
 
+@GenerateTs(typeLiteral = "NotifyGameMessage")
 @Serializable
 data class NotifyGameMessage(
     val type: String = "NotifyGameMessage",
@@ -110,6 +125,7 @@ data class NotifyGameMessage(
     val messageParams: JsonElement? = null
 )
 
+@GenerateTs(typeLiteral = "GameMessageResponse")
 @Serializable
 data class GameMessageResponse(
     val type: String = "GameMessageResponse",
@@ -117,6 +133,7 @@ data class GameMessageResponse(
     val response: JsonElement
 )
 
+@GenerateTs(typeLiteral = "AdminGameMessageResponse")
 @Serializable
 data class AdminGameMessageResponse(
     val type: String = "AdminGameMessageResponse",
@@ -124,6 +141,7 @@ data class AdminGameMessageResponse(
     val fullGameData: FullGameData
 )
 
+@GenerateTs(typeLiteral = "UpdateFullGameDataResponse")
 @Serializable
 data class UpdateFullGameDataResponse(
     val type: String = "UpdateFullGameDataResponse",
@@ -133,18 +151,23 @@ data class UpdateFullGameDataResponse(
 
 // ---------------------------------------------------------------- base models (generated for the front)
 
+@GenerateTs
 @Serializable
 data class GameSettings(val id: String)
 
+@GenerateTs
 @Serializable
 data class PlayerPublicState(val playerId: String, val points: Int)
 
+@GenerateTs
 @Serializable
 data class PlayerPrivateState(val playerId: String)
 
+@GenerateTs
 @Serializable
 data class GameStatistics(val turnCount: Int)
 
+@GenerateTs
 @Serializable
 data class GamePublicState(
     val activePlayerIndex: Int = 0,
@@ -153,26 +176,33 @@ data class GamePublicState(
     val statistics: GameStatistics = GameStatistics(0)
 )
 
+@GenerateTs
 @Serializable
 data class GamePrivateState(val playersStates: List<PlayerPrivateState>? = null)
 
 // ---------------------------------------------------------------- client -> server messages
 
+@GenerateTs
 @Serializable
 data class CreateGameProps(val name: String, val type: String, val owner: String)
 
+@GenerateTs
 @Serializable
 data class UserPayload(val id: String, val name: String, val color: String)
 
+@GenerateTs(typeLiteral = "HandshakeRequest")
 @Serializable
 data class HandshakeRequest(val type: String = "HandshakeRequest", val userId: String)
 
+@GenerateTs(typeLiteral = "GetAllGamesRequest")
 @Serializable
 data class GetAllGamesRequest(val type: String = "GetAllGamesRequest")
 
+@GenerateTs(typeLiteral = "GetGameRequest")
 @Serializable
 data class GetGameRequest(val type: String = "GetGameRequest")
 
+@GenerateTs(typeLiteral = "GetGameResponse")
 @Serializable
 data class GetGameResponse(
     val type: String = "GetGameResponse",
@@ -180,6 +210,7 @@ data class GetGameResponse(
     val gameSettings: JsonElement
 )
 
+@GenerateTs(typeLiteral = "CreateGameRequest")
 @Serializable
 data class CreateGameRequest(
     val type: String = "CreateGameRequest",
@@ -187,6 +218,7 @@ data class CreateGameRequest(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "DeleteGameRequest")
 @Serializable
 data class DeleteGameRequest(
     val type: String = "DeleteGameRequest",
@@ -194,6 +226,7 @@ data class DeleteGameRequest(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "UpdateUserRequest")
 @Serializable
 data class UpdateUserRequest(
     val type: String = "UpdateUserRequest",
@@ -201,6 +234,7 @@ data class UpdateUserRequest(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "ConnectToGameMessage")
 @Serializable
 data class ConnectToGameMessage(
     val type: String = "ConnectToGameMessage",
@@ -208,9 +242,11 @@ data class ConnectToGameMessage(
     val id: String? = null
 )
 
+@GenerateTs
 @Serializable
 data class GameMessage(val type: String, val id: String? = null)
 
+@GenerateTs(typeLiteral = "GameInfoMessage")
 @Serializable
 data class GameInfoMessage(
     val type: String = "GameInfoMessage",
@@ -218,6 +254,7 @@ data class GameInfoMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "ErorrGameMessage")
 @Serializable
 data class ErorrGameMessage(
     val type: String = "ErorrGameMessage",
@@ -226,12 +263,15 @@ data class ErorrGameMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "StartGameMessage")
 @Serializable
 data class StartGameMessage(val type: String = "StartGameMessage", val id: String? = null)
 
+@GenerateTs(typeLiteral = "JoinGameMessage")
 @Serializable
 data class JoinGameMessage(val type: String = "JoinGameMessage", val id: String? = null)
 
+@GenerateTs(typeLiteral = "AddBotGameMessage")
 @Serializable
 data class AddBotGameMessage(
     val type: String = "AddBotGameMessage",
@@ -239,6 +279,7 @@ data class AddBotGameMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "UpdateBotGameMessage")
 @Serializable
 data class UpdateBotGameMessage(
     val type: String = "UpdateBotGameMessage",
@@ -246,6 +287,7 @@ data class UpdateBotGameMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "KickPlayerMessage")
 @Serializable
 data class KickPlayerMessage(
     val type: String = "KickPlayerMessage",
@@ -253,9 +295,11 @@ data class KickPlayerMessage(
     val id: String? = null
 )
 
+@GenerateTs
 @Serializable
 data class GameAction(val type: String)
 
+@GenerateTs(typeLiteral = "GameActionMessage")
 @Serializable
 data class GameActionMessage(
     val type: String = "GameActionMessage",
@@ -263,9 +307,11 @@ data class GameActionMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "CrateGameBackupMessage")
 @Serializable
 data class CrateGameBackupMessage(val type: String = "CrateGameBackupMessage", val id: String? = null)
 
+@GenerateTs(typeLiteral = "GetAdminGameMessage")
 @Serializable
 data class GetAdminGameMessage(
     val type: String = "GetAdminGameMessage",
@@ -273,6 +319,7 @@ data class GetAdminGameMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "UpdateFullGameDataMessage")
 @Serializable
 data class UpdateFullGameDataMessage(
     val type: String = "UpdateFullGameDataMessage",
@@ -280,6 +327,7 @@ data class UpdateFullGameDataMessage(
     val id: String? = null
 )
 
+@GenerateTs(typeLiteral = "ForceUpdateGameData")
 @Serializable
 data class ForceUpdateGameData(val type: String = "ForceUpdateGameData", val id: String? = null)
 

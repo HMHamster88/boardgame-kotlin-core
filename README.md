@@ -51,6 +51,10 @@ gradle :api:generateTs   # -> common/src/back/generated/protocol.ts (from Kotlin
 npm run typecheck -w common
 ```
 
+Models are discovered by scanning the compiled classes for `@GenerateTs`; use
+`@GenerateTs(name = "GameState")` or `@GenerateTs(typeLiteral = "…")` when the TS name or a
+discriminated `type` literal differs from the Kotlin class name. There is no manual type list.
+
 `common/src/back/dto.ts` and `wsMessages.ts` are now **pure re-exports** of the generated protocol:
 DTOs, base models (`GameSettings`, `GamePublicState`, …), requests, responses and sync messages.
 Only front-only pieces stay hand-written: the `UserRole` / `GameStatusEnum` / `ConnectStatus`
