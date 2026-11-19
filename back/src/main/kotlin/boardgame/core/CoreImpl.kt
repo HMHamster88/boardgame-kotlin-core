@@ -219,7 +219,8 @@ class CoreImpl(private val host: HostServices) : GameCore {
         if (!gamesDir.isDirectory) return
         gamesDir.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }?.forEach { moduleDir ->
             val backDir = File(moduleDir, "back")
-            val jar = backDir.listFiles()?.firstOrNull { it.extension == "jar" } ?: return@forEach
+            // Newest jar wins: development reloads install each build under a unique name.
+            val jar = backDir.listFiles { it.isFile && it.extension == "jar" }?.maxByOrNull { it.lastModified() } ?: return@forEach
             runCatching {
                 val module = host.loadPlugin(jar, GameBackModule::class.java)
                 val service = module.createService()
