@@ -239,6 +239,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
     }
 
     override suspend fun installGameModule(homepage: String): GameModuleInfo {
+        log("Checking $homepage for the latest release")
         val releaseUrl = homepage.trimEnd('/')
             .replace("github.com/", "api.github.com/repos/") + "/releases/latest"
         val release = host.http.getText(releaseUrl)?.let { runCatching { apiJson.parseToJsonElement(it).jsonObject }.getOrNull() }
@@ -247,7 +248,18 @@ class CoreImpl(private val host: HostServices) : GameCore {
         val assets = release.arr("assets") ?: error("release has no assets")
         val asset = assets.firstOrNull()?.jsonObject ?: error("release has no assets")
         val downloadUrl = asset.str("browser_download_url") ?: error("asset has no download url")
-        val bytes = host.http.getBytes(downloadUrl) ?: error("failed to download $downloadUrl")
+        log("Downloading ${asset.str("name") ?: "module"} (${tag.removePrefix("v")})")
+        var lastBucket = -1
+        val bytes = host.http.getBytes(downloadUrl) { received, total ->
+            if (total > 0) {
+                val percent = ((received * 100) / total).toInt()
+                val bucket = (percent / 25) * 25
+                if (bucket in 25..100 && bucket > lastBucket) {
+                    lastBucket = bucket
+                    log("  $bucket%")
+                }
+            }
+        } ?: error("failed to download $downloadUrl")
 
         val directory = downloadUrl.substringAfterLast('/').substringBeforeLast('.').replace('.', '_')
         val gamesDir = File(host.platform.dataDir, "games-modules").apply { mkdirs() }
@@ -279,7 +291,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
                 put("tag", tag)
             }.toString()
         )
-        log("Installed module ${info.type} ${info.version}")
+        log("Installed module ${info.type} ${info.version} in $directory")
         return info
     }
 

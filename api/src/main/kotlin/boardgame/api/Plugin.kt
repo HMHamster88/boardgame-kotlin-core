@@ -41,6 +41,13 @@ interface Storage {
 interface HostHttp {
     suspend fun getText(url: String): String?
     suspend fun getBytes(url: String): ByteArray?
+
+    /**
+     * Progress-aware download. The default ignores [onProgress], so hosts that cannot report
+     * progress keep working.
+     */
+    suspend fun getBytes(url: String, onProgress: (received: Long, total: Long) -> Unit): ByteArray? =
+        getBytes(url)
 }
 
 interface HostConsole {
