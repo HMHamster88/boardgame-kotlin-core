@@ -27,6 +27,7 @@ dependencies {
 val versionProperties = layout.buildDirectory.file("generated/version/version.properties")
 val generateVersionProperties = tasks.register("generateVersionProperties") {
     val version = project.version.toString()
+    inputs.property("version", version)
     outputs.file(versionProperties)
     doLast {
         versionProperties.get().asFile.apply {
