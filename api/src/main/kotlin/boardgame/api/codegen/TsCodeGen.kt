@@ -23,7 +23,7 @@ fun generateTs(types: List<TsTypeSpec>): String {
     val registry = types.associate { it.serializer.descriptor.serialName.removeSuffix("?") to it.name }
     return buildString {
         appendLine("// Generated from Kotlin models by the module's generateTs task. Do not edit.")
-        appendLine("// The hand-written types in the front are validated against this file.")
+        appendLine("// Only model types shared with the back-end are generated; front-only helpers stay hand-written.")
         appendLine()
         types.forEach { spec ->
             val descriptor = spec.serializer.descriptor

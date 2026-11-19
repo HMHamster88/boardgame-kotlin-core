@@ -1,5 +1,5 @@
 // Generated from Kotlin models by the module's generateTs task. Do not edit.
-// The hand-written types in the front are validated against this file.
+// Only model types shared with the back-end are generated; front-only helpers stay hand-written.
 
 export interface User {
     id: string
