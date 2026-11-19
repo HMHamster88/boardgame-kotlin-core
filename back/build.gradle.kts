@@ -115,4 +115,7 @@ val releaseZip = tasks.register<Zip>("releaseZip") {
             "Front build missing at ${file("public")}. Run `npm run build-front` in the core repository first."
         }
     }
+    doLast {
+        logger.lifecycle("Release asset: ${archiveFile.get().asFile.absolutePath}")
+    }
 }
