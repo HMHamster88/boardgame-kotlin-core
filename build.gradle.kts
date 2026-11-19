@@ -30,3 +30,10 @@ tasks.register("devBuild") {
     description = "Regenerates the protocol types, builds the front and the core plugin jar"
     dependsOn(":api:generateTs", devFront, ":back:jar")
 }
+
+/** Release build: front + dual-format plugin jar (with classes.dex), zipped for a GitHub release. */
+tasks.register("releaseBuild") {
+    group = "release"
+    description = "Builds back/build/dist/boardgame-core-<version>.zip (front, jar and classes.dex)"
+    dependsOn(":back:releaseZip")
+}

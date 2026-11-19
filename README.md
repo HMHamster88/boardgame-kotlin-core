@@ -94,3 +94,14 @@ npm run build-front
 ```
 
 `front/package.json` already points at `boardgame-web-common` via `file:../common`.
+
+## Release build
+
+```bash
+gradle releaseBuild   # -> back/build/dist/boardgame-core-<version>.zip
+```
+
+Builds the front, the dual-format plugin jar (`back/core.jar`: class files + `classes.dex` produced
+with `d8`) and packages them into the release zip. Requires `npm` and the Android SDK (`sdk.dir` in
+`local.properties` or `ANDROID_HOME`). IntelliJ IDEA: the shared **Build core release** run
+configuration (`.idea/runConfigurations`) runs the same task.
