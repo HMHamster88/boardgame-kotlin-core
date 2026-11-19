@@ -44,6 +44,26 @@ The asset contains `back/core.jar` (dual-format: class files + `classes.dex` + r
 descriptor) and `front/**`. `d8` is taken from the Android SDK (`local.properties` / `ANDROID_HOME`);
 the task fails with a clear message when the front build or the SDK is missing.
 
+## TypeScript protocol codegen (validation-only)
+
+```bash
+gradle :api:generateTs   # -> common/src/back/generated/protocol.ts (from Kotlin DTOs)
+npm run typecheck -w common
+```
+
+`common/src/back/validate.ts` asserts, at the type level, that the hand-written `dto.ts` /
+`wsMessages.ts` are compatible with the generated wire types. Known representation differences are
+asserted explicitly (enum status → `string`, `created` → ISO `string`, `JsonElement` → `any`,
+optional nullable fields). The hand-written files remain the imported source until parity is proven.
+
+After changing `:api` DTOs:
+
+```bash
+gradle :api:generateTs
+git diff --exit-code common/src/back/generated/protocol.ts   # CI drift guard
+npm run typecheck -w common
+```
+
 ## Front build
 
 ```bash

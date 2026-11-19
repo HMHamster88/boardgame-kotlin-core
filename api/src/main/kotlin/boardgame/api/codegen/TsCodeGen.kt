@@ -20,10 +20,10 @@ data class TsTypeSpec(
 )
 
 fun generateTs(types: List<TsTypeSpec>): String {
-    val registry = types.associate { it.serializer.descriptor.serialName to it.name }
+    val registry = types.associate { it.serializer.descriptor.serialName.removeSuffix("?") to it.name }
     return buildString {
-        appendLine("// Generated from Kotlin models by `gradle :back:generateTs`. Do not edit.")
-        appendLine("// The hand-written types in ../types.ts are validated against this file.")
+        appendLine("// Generated from Kotlin models by the module's generateTs task. Do not edit.")
+        appendLine("// The hand-written types in the front are validated against this file.")
         appendLine()
         types.forEach { spec ->
             val descriptor = spec.serializer.descriptor
@@ -34,12 +34,14 @@ fun generateTs(types: List<TsTypeSpec>): String {
             for (index in 0 until descriptor.elementsCount) {
                 val propertyName = descriptor.getElementName(index)
                 val element = descriptor.getElementDescriptor(index)
-                val type = if (propertyName == "type" && spec.typeLiteral != null) {
-                    "'${spec.typeLiteral}'"
+                if (propertyName == "type" && spec.typeLiteral != null) {
+                    appendLine("    $propertyName: '${spec.typeLiteral}'")
                 } else {
-                    tsType(element, registry)
+                    // The wire omits null fields (explicitNulls = false), so nullable maps to an
+                    // optional property rather than `T | null`.
+                    val optional = if (element.isNullable) "?" else ""
+                    appendLine("    $propertyName$optional: ${tsType(element, registry, includeNull = false)}")
                 }
-                appendLine("    $propertyName: $type")
             }
             appendLine("}")
             appendLine()
@@ -47,17 +49,22 @@ fun generateTs(types: List<TsTypeSpec>): String {
     }
 }
 
-private fun tsType(descriptor: SerialDescriptor, registry: Map<String, String>): String {
+private fun tsType(
+    descriptor: SerialDescriptor,
+    registry: Map<String, String>,
+    includeNull: Boolean = true
+): String {
+    val serialName = descriptor.serialName.removeSuffix("?")
     val base = when {
-        descriptor.serialName == "kotlinx.serialization.json.JsonElement" -> "any"
-        descriptor.serialName == "kotlinx.serialization.json.JsonObject" -> "Record<string, any>"
+        serialName == "kotlinx.serialization.json.JsonElement" -> "any"
+        serialName == "kotlinx.serialization.json.JsonObject" -> "Record<string, any>"
         descriptor.kind == StructureKind.LIST -> "${tsType(descriptor.getElementDescriptor(0), registry)}[]"
         descriptor.kind == StructureKind.MAP ->
             "Record<string, ${tsType(descriptor.getElementDescriptor(1), registry)}>"
         descriptor.kind == SerialKind.ENUM ->
             descriptor.elementNames.joinToString(" | ") { "'$it'" }
         descriptor.kind == StructureKind.CLASS ->
-            registry[descriptor.serialName] ?: descriptor.serialName.substringAfterLast('.')
+            registry[serialName] ?: serialName.substringAfterLast('.')
         descriptor.kind == PrimitiveKind.STRING || descriptor.kind == PrimitiveKind.CHAR -> "string"
         descriptor.kind == PrimitiveKind.BOOLEAN -> "boolean"
         descriptor.kind == PrimitiveKind.INT || descriptor.kind == PrimitiveKind.LONG ||
@@ -65,5 +72,5 @@ private fun tsType(descriptor: SerialDescriptor, registry: Map<String, String>):
             descriptor.kind == PrimitiveKind.DOUBLE || descriptor.kind == PrimitiveKind.FLOAT -> "number"
         else -> "any"
     }
-    return if (descriptor.isNullable) "$base | null" else base
+    return if (includeNull && descriptor.isNullable) "$base | null" else base
 }

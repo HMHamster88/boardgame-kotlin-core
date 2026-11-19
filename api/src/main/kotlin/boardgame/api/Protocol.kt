@@ -29,7 +29,7 @@ data class GameType(
     val type: String,
     val localizedName: JsonElement,
     // The typo is part of the protocol: the front reads `diectoryName`.
-    @SerialName("diectoryName") val directoryName: String? = null
+    @SerialName("diectoryName") val directoryName: String = ""
 )
 
 @Serializable

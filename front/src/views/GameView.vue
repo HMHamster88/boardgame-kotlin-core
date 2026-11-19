@@ -132,7 +132,7 @@ const memoryLocalStore = useMemoryLocalStore()
 
 const gameId = route.params['id'] as string
 
-const game = ref<Game>({ id: '', name: '', owner: '', players: [], status: GameStatusEnum.CREATED, type: '', settings: { minPlayers: 2, maxPlayers: 2 }, created: new Date() } as Game)
+const game = ref<Game>({ id: '', name: '', owner: '', players: [], status: GameStatusEnum.CREATED, type: '', settings: { minPlayers: 2, maxPlayers: 2 }, created: '' } as Game)
 const gameState = ref<GamePublicState | undefined>(undefined)
 const gameSettings = ref<GameSettings>({ id: '' })
 

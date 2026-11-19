@@ -19,3 +19,13 @@ dependencies {
 
     testImplementation(kotlin("test"))
 }
+
+/** Generates common/src/back/generated/protocol.ts from the Kotlin DTOs. */
+val generateTs = tasks.register<JavaExec>("generateTs") {
+    group = "codegen"
+    description = "Generates the front's protocol types from the Kotlin DTOs"
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass.set("boardgame.api.TsExport")
+    args(layout.projectDirectory.file("../common/src/back/generated/protocol.ts").asFile.absolutePath)
+}

@@ -93,7 +93,7 @@ export interface Game {
     type: string
     players: Player[]
     status: GameStatusEnum
-    created: Date
+    created: string
 }
 
 export interface GameBackModule {
