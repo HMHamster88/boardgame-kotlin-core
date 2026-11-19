@@ -46,6 +46,9 @@ gradle releaseBuild "-PcoreVersion=0.2.0"
 Tag the GitHub release `v<version>` (the launcher strips the `v` and compares it with the installed
 `version.properties`; a mismatch makes it re-download on every update check).
 
+The shared **Build core release** IDEA configuration passes `-PcoreVersion=0.2.0`; update that value
+when bumping the release version (or clear it to use the Gradle default).
+
 ## Release packaging
 
 ```bash
