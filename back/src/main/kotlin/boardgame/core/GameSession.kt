@@ -218,6 +218,7 @@ class GameSession(
         context.onNotify { peerId, message, params -> notify(peerId, message, params) }
         val response = service.performAction(context, action, playerId)
         state = context.snapshot()
+        settings = context.settingsSnapshot()
 
         sendDiffLocked("game", beforeGame, gameTree())
         sendDiffLocked("gameSettings", beforeSettings, settings)
@@ -407,11 +408,12 @@ class GameSession(
 
     private class Context(
         override val game: Game,
-        override val settings: JsonObject,
+        initialSettings: JsonObject,
         initial: GameStatePayload?
     ) : GameContext {
 
         private val hadState = initial != null
+        private var settingsValue = initialSettings
         private var publicValue: JsonElement = initial?.publicState ?: JsonNull
         private var privateValue: JsonElement? = initial?.privateState
 
@@ -421,6 +423,7 @@ class GameSession(
             notifyHandler = handler
         }
 
+        override val settings: JsonObject get() = settingsValue
         override val publicState: JsonElement get() = publicValue
         override val privateState: JsonElement? get() = privateValue
 
@@ -431,6 +434,12 @@ class GameSession(
         override fun updatePrivateState(value: JsonElement?) {
             privateValue = value
         }
+
+        override fun updateSettings(value: JsonElement) {
+            settingsValue = value as? JsonObject ?: JsonObject(emptyMap())
+        }
+
+        fun settingsSnapshot(): JsonObject = settingsValue
 
         override fun notify(peerId: String?, message: String, params: JsonElement?) {
             notifyHandler?.invoke(peerId, message, params)

@@ -118,6 +118,9 @@ interface GameContext {
 
     fun updatePublicState(value: JsonElement)
     fun updatePrivateState(value: JsonElement?)
+
+    /** Replaces game settings during an action (e.g. a newly generated map). Default ignores it. */
+    fun updateSettings(value: JsonElement) {}
     fun notify(peerId: String?, message: String, params: JsonElement? = null)
 }
 

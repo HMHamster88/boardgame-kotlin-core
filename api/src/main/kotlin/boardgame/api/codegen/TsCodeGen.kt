@@ -27,23 +27,35 @@ fun generateTs(types: List<TsTypeSpec>): String {
         appendLine()
         types.forEach { spec ->
             val descriptor = spec.serializer.descriptor
-            require(descriptor.kind == StructureKind.CLASS) {
-                "${descriptor.serialName} is not a class (kind=${descriptor.kind})"
-            }
-            appendLine("export interface ${spec.name} {")
-            for (index in 0 until descriptor.elementsCount) {
-                val propertyName = descriptor.getElementName(index)
-                val element = descriptor.getElementDescriptor(index)
-                if (propertyName == "type" && spec.typeLiteral != null) {
-                    appendLine("    $propertyName: '${spec.typeLiteral}'")
-                } else {
-                    // The wire omits null fields (explicitNulls = false), so nullable maps to an
-                    // optional property rather than `T | null`.
-                    val optional = if (element.isNullable) "?" else ""
-                    appendLine("    $propertyName$optional: ${tsType(element, registry, includeNull = false)}")
+            when (descriptor.kind) {
+                StructureKind.CLASS -> {
+                    appendLine("export interface ${spec.name} {")
+                    for (index in 0 until descriptor.elementsCount) {
+                        val propertyName = descriptor.getElementName(index)
+                        val element = descriptor.getElementDescriptor(index)
+                        if (propertyName == "type" && spec.typeLiteral != null) {
+                            appendLine("    $propertyName: '${spec.typeLiteral}'")
+                        } else {
+                            // The wire omits null fields (explicitNulls = false), so nullable maps to an
+                            // optional property rather than `T | null`.
+                            val optional = if (element.isNullable) "?" else ""
+                            appendLine("    $propertyName$optional: ${tsType(element, registry, includeNull = false)}")
+                        }
+                    }
+                    appendLine("}")
                 }
+
+                SerialKind.ENUM -> {
+                    appendLine("export enum ${spec.name} {")
+                    for (index in 0 until descriptor.elementsCount) {
+                        val member = descriptor.getElementName(index)
+                        appendLine("    $member = '$member',")
+                    }
+                    appendLine("}")
+                }
+
+                else -> error("${descriptor.serialName} is not a class or enum (kind=${descriptor.kind})")
             }
-            appendLine("}")
             appendLine()
         }
     }
@@ -59,10 +71,13 @@ private fun tsType(
         serialName == "kotlinx.serialization.json.JsonElement" -> "any"
         serialName == "kotlinx.serialization.json.JsonObject" -> "Record<string, any>"
         descriptor.kind == StructureKind.LIST -> "${tsType(descriptor.getElementDescriptor(0), registry)}[]"
-        descriptor.kind == StructureKind.MAP ->
-            "Record<string, ${tsType(descriptor.getElementDescriptor(1), registry)}>"
+        descriptor.kind == StructureKind.MAP -> {
+            val key = tsType(descriptor.getElementDescriptor(0), registry, includeNull = false)
+            val value = tsType(descriptor.getElementDescriptor(1), registry)
+            "Record<$key, $value>"
+        }
         descriptor.kind == SerialKind.ENUM ->
-            descriptor.elementNames.joinToString(" | ") { "'$it'" }
+            registry[serialName] ?: descriptor.elementNames.joinToString(" | ") { "'$it'" }
         descriptor.kind == StructureKind.CLASS ->
             registry[serialName] ?: serialName.substringAfterLast('.')
         descriptor.kind == PrimitiveKind.STRING || descriptor.kind == PrimitiveKind.CHAR -> "string"
