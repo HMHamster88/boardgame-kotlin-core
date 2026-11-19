@@ -35,19 +35,20 @@ gradle :back:jar        # -> back/build/libs/back-<version>.jar (core plugin)
 
 ## Version
 
-`version = "0.1.0"` in `build.gradle.kts` drives the plugin jar name, the `version.properties` inside
-the jar, the `boardgame-core-<version>.zip` asset and the `com.hmhamster:boardgame-api` coordinate.
-Override it for a release without editing the file:
+The version is resolved in this order:
 
-```bash
-gradle releaseBuild "-PcoreVersion=0.2.0"
-```
+1. `-PcoreVersion=…`
+2. `RELEASE_VERSION` environment variable
+3. the latest reachable git tag (`v0.2.0` → `0.2.0`)
+4. default `0.1.0`
 
-Tag the GitHub release `v<version>` (the launcher strips the `v` and compares it with the installed
-`version.properties`; a mismatch makes it re-download on every update check).
+Tag the release before building (`git tag v0.2.0 && git push --tags`, or create the release on GitHub
+and run `git fetch --tags`); the **Build core release** configuration then produces
+`boardgame-core-0.2.0.zip` and `back-0.2.0.jar` with `version.properties = 0.2.0` automatically.
+Pass `-PcoreVersion=…` in the run configuration's Arguments field for a one-off override.
 
-The shared **Build core release** IDEA configuration passes `-PcoreVersion=0.2.0`; update that value
-when bumping the release version (or clear it to use the Gradle default).
+The git tag must match the installed `version.properties` (the launcher strips the `v` and compares
+them; a mismatch makes it re-download on every update check).
 
 ## Release packaging
 

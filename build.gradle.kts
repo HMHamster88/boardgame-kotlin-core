@@ -3,10 +3,27 @@ plugins {
     kotlin("plugin.serialization") version "2.1.21" apply false
 }
 
+/** Latest reachable git tag without the leading `v`; null when the repository has no tags. */
+fun latestGitTag(): String? = runCatching {
+    val process = ProcessBuilder("git", "describe", "--tags", "--abbrev=0")
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val tag = process.inputStream.bufferedReader().readText().trim()
+    if (process.waitFor() == 0) tag.removePrefix("v").takeIf { it.isNotBlank() } else null
+}.getOrNull()
+
+/**
+ * -PcoreVersion=… > RELEASE_VERSION > latest git tag > default. Tag the release (and fetch tags)
+ * before building so the artifact name matches the GitHub release.
+ */
+val projectVersion = providers.gradleProperty("coreVersion")
+    .orElse(providers.environmentVariable("RELEASE_VERSION"))
+    .getOrElse(latestGitTag() ?: "0.1.0")
+
 allprojects {
     group = "com.hmhamster"
-    // Release override: gradlew releaseBuild -PcoreVersion=0.2.0
-    version = providers.gradleProperty("coreVersion").getOrElse("0.1.0")
+    version = projectVersion
 }
 
 /**
