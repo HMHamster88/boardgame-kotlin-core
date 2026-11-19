@@ -72,6 +72,17 @@ npm run build-common
 npm run build-front
 ```
 
+## Development build
+
+```bash
+gradle devBuild   # :api:generateTs + :back:jar
+```
+
+The launcher's `DEV=true` watcher reloads the core as soon as
+`back/build/libs/back-0.1.0.jar` changes. IntelliJ IDEA: the shared **Build core (dev)** run
+configuration (`.idea/runConfigurations`) runs the same task. Front changes still use
+`npm run build-front` above.
+
 ## Front build
 
 ```bash
