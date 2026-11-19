@@ -1,6 +1,5 @@
 package boardgame.api
 
-import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 
@@ -28,8 +27,7 @@ data class User(
 data class GameType(
     val type: String,
     val localizedName: JsonElement,
-    // The typo is part of the protocol: the front reads `diectoryName`.
-    @SerialName("diectoryName") val directoryName: String = ""
+    val directoryName: String = ""
 )
 
 @Serializable

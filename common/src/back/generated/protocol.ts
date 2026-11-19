@@ -51,7 +51,7 @@ export interface User {
 export interface GameType {
     type: string
     localizedName: any
-    diectoryName: string
+    directoryName: string
 }
 
 export interface Player {

@@ -18,7 +18,7 @@ export async function getGameService(type: GameType) {
         remotes: [
             {
                 name: lowerType,
-                entry: '/games-modules/' + type.diectoryName + '/front/assets/remoteEntry.js',
+                entry: '/games-modules/' + type.directoryName + '/front/assets/remoteEntry.js',
                 type: 'module'
             }
         ],
