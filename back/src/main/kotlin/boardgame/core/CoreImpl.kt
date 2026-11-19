@@ -30,6 +30,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonObject
@@ -43,6 +45,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
 
     private val peers = ConcurrentHashMap<String, Peer>()
     private val peerGames = ConcurrentHashMap<String, String>()
+    private val peerLocks = ConcurrentHashMap<String, Mutex>()
     private val sessions = ConcurrentHashMap<String, GameSession>()
     private val services = ConcurrentHashMap<String, GameBackService>()
     private val modules = ConcurrentHashMap<String, GameModuleInfo>()
@@ -57,12 +60,19 @@ class CoreImpl(private val host: HostServices) : GameCore {
     override fun attach(peer: Peer) {
         peers[peer.userId] = peer
         val user = loadOrCreateUser(peer.userId)
-        peer.onMessage { text -> scope.launch { handle(peer, text) } }
+        // Messages from one peer are handled in arrival order: a JoinGameMessage must never be
+        // observed before the ConnectToGameMessage that attaches the peer to the session.
+        val lock = peerLocks.computeIfAbsent(peer.userId) { Mutex() }
+        peer.onMessage { text -> scope.launch { lock.withLock { handle(peer, text) } } }
         peer.onClose { detach(peer) }
         peer.send(encodeToJson(HandshakeResponse(user = user, gameTypes = gameTypes())))
     }
 
     override fun detach(peer: Peer) {
+        scope.launch { peerLocks.computeIfAbsent(peer.userId) { Mutex() }.withLock { detachLocked(peer) } }
+    }
+
+    private fun detachLocked(peer: Peer) {
         // A reconnect registers a new Peer instance for the same user; the old close handler must
         // not remove the new one.
         if (peers[peer.userId] !== peer) return

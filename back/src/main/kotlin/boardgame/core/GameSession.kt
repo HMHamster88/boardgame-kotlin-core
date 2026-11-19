@@ -91,6 +91,7 @@ class GameSession(
             }
             MessageTypes.ADD_BOT -> mutex.withLock { addBotLocked(message) }
             MessageTypes.UPDATE_BOT -> mutex.withLock { updateBotLocked(message) }
+            MessageTypes.UPDATE_USER -> mutex.withLock { updateUserLocked(peer, message) }
             MessageTypes.KICK_PLAYER -> mutex.withLock { kickLocked(peer, message) }
             MessageTypes.CREATE_BACKUP -> mutex.withLock { backupLocked(peer) }
             MessageTypes.FORCE_UPDATE -> mutex.withLock { forceUpdateLocked(peer) }
@@ -158,6 +159,25 @@ class GameSession(
         val user = userProvider(peer.userId) ?: User(peer.userId, "Player", "#FF0000")
         val before = gameTree()
         game.players.add(Player(userId = peer.userId, name = user.name, color = user.color, online = true, isBot = false))
+        sendDiffLocked("game", before, gameTree())
+        persistGame()
+    }
+
+    /** Mirrors the user document into the player entry, so profile edits show up in the game. */
+    private fun updateUserLocked(peer: Peer, message: JsonObject) {
+        val payload = message.obj("user") ?: return
+        val userId = payload.str("id") ?: peer.userId
+        if (userId != peer.userId) return
+        val name = payload.str("name") ?: return
+        val color = payload.str("color") ?: return
+
+        val index = game.players.indexOfFirst { it.userId == userId }
+        if (index < 0) return
+        val player = game.players[index]
+        if (player.name == name && player.color == color) return
+
+        val before = gameTree()
+        game.players[index] = player.copy(name = name, color = color)
         sendDiffLocked("game", before, gameTree())
         persistGame()
     }
