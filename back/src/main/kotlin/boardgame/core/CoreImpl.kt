@@ -247,12 +247,12 @@ class CoreImpl(private val host: HostServices) : GameCore {
 
     /**
      * Installs the default game modules on first start (like the TS launcher's seeded homepages).
-     * With `CHECK_FOR_UPDATES=true` installed modules are also compared with their latest release.
-     * `SKIP_DEFAULT_GAMES=1` disables the whole step (offline/tests).
+     * When the host enables update checks, installed modules are also compared with their latest
+     * release. `SKIP_DEFAULT_GAMES=1` disables the whole step (offline/tests).
      */
     private fun ensureDefaultGameModules() {
         if (System.getenv("SKIP_DEFAULT_GAMES") == "1") return
-        val checkUpdates = System.getenv("CHECK_FOR_UPDATES").equals("true", ignoreCase = true)
+        val checkUpdates = host.checkForUpdates
         val installed = modules.values.associateBy { it.homepage.trimEnd('/') }
         runBlocking {
             DEFAULT_GAME_HOMEPAGES.forEach { homepage ->

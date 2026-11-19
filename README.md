@@ -55,8 +55,9 @@ them; a mismatch makes it re-download on every update check).
 On first start the core installs the modules listed in
 `back/src/main/kotlin/boardgame/core/DefaultGames.kt`: CAH now, plus the planned Catan / Ticket to
 Ride / Carcassonne repositories (they are skipped with a log line until they have a release).
-Missing modules are downloaded from their latest GitHub release; `CHECK_FOR_UPDATES=true` also
-updates installed ones. `SKIP_DEFAULT_GAMES=1` disables the step (offline/tests).
+Missing modules are downloaded from their latest GitHub release; when the host enables update checks
+(the launcher defaults `CHECK_FOR_UPDATES` to true outside dev mode) installed ones are updated too.
+`SKIP_DEFAULT_GAMES=1` disables the step (offline/tests).
 
 Installs are written next to any running jar under a unique name and the newest jar is used, so an
 update never tries to replace a jar the JVM has open (Windows).

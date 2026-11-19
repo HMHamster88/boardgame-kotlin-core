@@ -12,6 +12,9 @@ interface HostServices {
     val http: HostHttp
     val console: HostConsole?
 
+    /** Whether module releases should be checked/updated at startup. */
+    val checkForUpdates: Boolean get() = false
+
     /**
      * Loads a plugin archive (`module.jar`) with a classloader whose parent sees [service].
      * The host owns the platform-specific mechanics (URLClassLoader / DexClassLoader).
