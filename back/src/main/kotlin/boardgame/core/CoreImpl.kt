@@ -15,6 +15,7 @@ import boardgame.api.HostServices
 import boardgame.api.MessageTypes
 import boardgame.api.Peer
 import boardgame.api.Roles
+import boardgame.api.Semver
 import boardgame.api.User
 import boardgame.api.UpdateFullGameDataResponse
 import boardgame.api.apiJson
@@ -30,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.JsonObject
@@ -55,6 +57,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
 
     init {
         loadInstalledModules()
+        ensureDefaultGameModules()
     }
 
     override fun attach(peer: Peer) {
@@ -219,8 +222,12 @@ class CoreImpl(private val host: HostServices) : GameCore {
         if (!gamesDir.isDirectory) return
         gamesDir.listFiles()?.filter { it.isDirectory }?.sortedBy { it.name }?.forEach { moduleDir ->
             val backDir = File(moduleDir, "back")
-            // Newest jar wins: development reloads install each build under a unique name.
-            val jar = backDir.listFiles { it.isFile && it.extension == "jar" }?.maxByOrNull { it.lastModified() } ?: return@forEach
+            // Newest jar wins: installs use unique names so a loaded jar is never replaced.
+            val jars = backDir.listFiles { it.isFile && it.extension == "jar" }
+                ?.sortedByDescending { it.lastModified() }
+                .orEmpty()
+            val jar = jars.firstOrNull() ?: return@forEach
+            jars.drop(1).forEach { stale -> stale.delete() }
             runCatching {
                 val module = host.loadPlugin(jar, GameBackModule::class.java)
                 val service = module.createService()
@@ -236,6 +243,48 @@ class CoreImpl(private val host: HostServices) : GameCore {
                 log("Loaded module ${info.type} ${info.version} from ${moduleDir.name}")
             }.onFailure { log("Failed to load module ${moduleDir.name}: ${it.message}") }
         }
+    }
+
+    /**
+     * Installs the default game modules on first start (like the TS launcher's seeded homepages).
+     * With `CHECK_FOR_UPDATES=true` installed modules are also compared with their latest release.
+     * `SKIP_DEFAULT_GAMES=1` disables the whole step (offline/tests).
+     */
+    private fun ensureDefaultGameModules() {
+        if (System.getenv("SKIP_DEFAULT_GAMES") == "1") return
+        val checkUpdates = System.getenv("CHECK_FOR_UPDATES").equals("true", ignoreCase = true)
+        val installed = modules.values.associateBy { it.homepage.trimEnd('/') }
+        runBlocking {
+            DEFAULT_GAME_HOMEPAGES.forEach { homepage ->
+                val known = installed[homepage.trimEnd('/')]
+                runCatching {
+                    when {
+                        known == null -> {
+                            log("Default game module not installed: $homepage")
+                            installGameModule(homepage)
+                        }
+
+                        checkUpdates -> {
+                            val latest = latestGameVersion(homepage) ?: return@runCatching
+                            if (Semver.isNewer(latest, known.version)) {
+                                log("Updating game module ${known.type} ${known.version} -> $latest")
+                                installGameModule(homepage)
+                            } else {
+                                log("Game module ${known.type} ${known.version} is up to date")
+                            }
+                        }
+                    }
+                }.onFailure { log("Default game module $homepage skipped: ${it.message}") }
+            }
+        }
+    }
+
+    private suspend fun latestGameVersion(homepage: String): String? {
+        val releaseUrl = homepage.trimEnd('/')
+            .replace("github.com/", "api.github.com/repos/") + "/releases/latest"
+        val text = host.http.getText(releaseUrl) ?: return null
+        val release = runCatching { apiJson.parseToJsonElement(text).jsonObject }.getOrNull() ?: return null
+        return release.str("tag_name")?.removePrefix("v")
     }
 
     override suspend fun installGameModule(homepage: String): GameModuleInfo {
@@ -268,12 +317,27 @@ class CoreImpl(private val host: HostServices) : GameCore {
         if (temp.exists()) temp.deleteRecursively()
         temp.mkdirs()
         unzip(bytes, temp)
-        if (target.exists()) target.deleteRecursively()
-        temp.renameTo(target)
 
-        val jar = File(target, "back").listFiles()?.firstOrNull { it.extension == "jar" }
-            ?: error("installed module has no back/*.jar")
-        val module = host.loadPlugin(jar, GameBackModule::class.java)
+        val sourceBack = File(temp, "back")
+        val sourceJars = sourceBack.listFiles { it.isFile && it.extension == "jar" }.orEmpty()
+        require(sourceJars.isNotEmpty()) { "installed module has no back/*.jar" }
+        val targetBack = File(target, "back").apply { mkdirs() }
+        // Unique file name: the currently loaded jar cannot be replaced on Windows.
+        val installedJar = File(targetBack, "$directory-${UUID.randomUUID()}.jar")
+        sourceJars.first().copyTo(installedJar, overwrite = true)
+        sourceBack.listFiles { it.isFile && it.extension != "jar" }?.forEach { file ->
+            file.copyTo(File(targetBack, file.name), overwrite = true)
+        }
+
+        val sourceFront = File(temp, "front")
+        if (sourceFront.isDirectory) {
+            val targetFront = File(target, "front")
+            if (targetFront.exists()) targetFront.deleteRecursively()
+            sourceFront.copyRecursively(targetFront, overwrite = true)
+        }
+        temp.deleteRecursively()
+
+        val module = host.loadPlugin(installedJar, GameBackModule::class.java)
         val service = module.createService()
         services[service.type] = service
         val info = GameModuleInfo(service.type, service.version, 1, directory, homepage)

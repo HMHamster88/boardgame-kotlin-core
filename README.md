@@ -50,6 +50,17 @@ Pass `-PcoreVersion=…` in the run configuration's Arguments field for a one-of
 The git tag must match the installed `version.properties` (the launcher strips the `v` and compares
 them; a mismatch makes it re-download on every update check).
 
+## Default game modules
+
+On first start the core installs the modules listed in
+`back/src/main/kotlin/boardgame/core/DefaultGames.kt`: CAH now, plus the planned Catan / Ticket to
+Ride / Carcassonne repositories (they are skipped with a log line until they have a release).
+Missing modules are downloaded from their latest GitHub release; `CHECK_FOR_UPDATES=true` also
+updates installed ones. `SKIP_DEFAULT_GAMES=1` disables the step (offline/tests).
+
+Installs are written next to any running jar under a unique name and the newest jar is used, so an
+update never tries to replace a jar the JVM has open (Windows).
+
 ## Release packaging
 
 ```bash
