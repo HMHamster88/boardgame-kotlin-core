@@ -35,7 +35,12 @@ object TsScanner {
         val type = runCatching { Class.forName(className) }.getOrNull() ?: return null
         val annotation = type.getAnnotation(GenerateTs::class.java) ?: return null
         val name = annotation.name.ifEmpty { type.simpleName }
-        return TsTypeSpec(serializerOf(type), name, annotation.typeLiteral.ifEmpty { null })
+        return TsTypeSpec(
+            serializerOf(type),
+            name,
+            annotation.typeLiteral.ifEmpty { null },
+            annotation.asUnion
+        )
     }
 
     private fun serializerOf(type: Class<*>): KSerializer<*> {

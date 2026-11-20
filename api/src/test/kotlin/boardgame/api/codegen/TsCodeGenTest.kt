@@ -25,4 +25,10 @@ class TsCodeGenTest {
         assertContains(ts, "main: TestColor")
         assertContains(ts, "counts: Record<TestColor, number>")
     }
+
+    @Test
+    fun emitsStringLiteralUnionsWhenRequested() {
+        val ts = generateTs(listOf(TsTypeSpec(TestColor.serializer(), "TestColor", asUnion = true)))
+        assertContains(ts, "export type TestColor = 'RED' | 'GREEN'")
+    }
 }

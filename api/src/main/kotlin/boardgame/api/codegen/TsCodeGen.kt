@@ -16,7 +16,9 @@ data class TsTypeSpec(
     val serializer: KSerializer<*>,
     val name: String,
     /** Literal for a `type` discriminator field, e.g. "CahSendAnswersAction". */
-    val typeLiteral: String? = null
+    val typeLiteral: String? = null,
+    /** Emit enum values as a string-literal union instead of a TS enum. */
+    val asUnion: Boolean = false
 )
 
 fun generateTs(types: List<TsTypeSpec>): String {
@@ -46,12 +48,18 @@ fun generateTs(types: List<TsTypeSpec>): String {
                 }
 
                 SerialKind.ENUM -> {
-                    appendLine("export enum ${spec.name} {")
-                    for (index in 0 until descriptor.elementsCount) {
-                        val member = descriptor.getElementName(index)
-                        appendLine("    $member = '$member',")
+                    if (spec.asUnion) {
+                        val members = (0 until descriptor.elementsCount)
+                            .joinToString(" | ") { "'${descriptor.getElementName(it)}'" }
+                        appendLine("export type ${spec.name} = $members")
+                    } else {
+                        appendLine("export enum ${spec.name} {")
+                        for (index in 0 until descriptor.elementsCount) {
+                            val member = descriptor.getElementName(index)
+                            appendLine("    $member = '$member',")
+                        }
+                        appendLine("}")
                     }
-                    appendLine("}")
                 }
 
                 else -> error("${descriptor.serialName} is not a class or enum (kind=${descriptor.kind})")
