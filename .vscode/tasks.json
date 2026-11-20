@@ -1,0 +1,52 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Core: dev build",
+            "type": "shell",
+            "command": "${workspaceFolder}/gradlew",
+            "windows": {
+                "command": "${workspaceFolder}\\gradlew.bat"
+            },
+            "args": [
+                "devBuild",
+                "--console=plain"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "group": "build"
+        },
+        {
+            "label": "Core: release build",
+            "type": "shell",
+            "command": "${workspaceFolder}/gradlew",
+            "windows": {
+                "command": "${workspaceFolder}\\gradlew.bat"
+            },
+            "args": [
+                "releaseBuild",
+                "--console=plain"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}
