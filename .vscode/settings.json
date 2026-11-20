@@ -11,7 +11,7 @@
             "label": "$(package) Release build",
             "task": "Core: release build",
             "tooltip": "Build the core release zip (front, jar and classes.dex)",
-            "alignment": "right"
+            "alignment": "left"
         }
     ]
 }
