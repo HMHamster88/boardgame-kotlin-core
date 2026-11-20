@@ -37,6 +37,7 @@ import {
 } from "websocket-ts";
 import { useLocalStore, useMemoryLocalStore } from "./localStore";
 import { useChatStore } from "./chatStore";
+import { soundService } from "./soundService";
 
 
 class WsService {
@@ -104,7 +105,19 @@ class WsService {
                 }
             },
             ChatMessageReceived: async (message: ChatMessageReceived) => {
-                useChatStore().receiveMessage(message.message)
+                const chatStore = useChatStore()
+                const localStore = useLocalStore()
+                const visible = document.visibilityState === 'visible' &&
+                    chatStore.open &&
+                    chatStore.activeRoomId === message.message.roomId
+
+                chatStore.receiveMessage(message.message)
+
+                if (!visible && message.message.userId !== localStore.user.id &&
+                    message.message.kind !== 'SYSTEM'
+                ) {
+                    soundService.notification()
+                }
             },
             ChatHistoryResponse: async (message: ChatHistoryResponse) => {
                 useChatStore().receiveHistory(message)

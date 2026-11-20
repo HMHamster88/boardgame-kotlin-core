@@ -21,7 +21,8 @@ Implemented:
 - `back/` — portable core plugin: lobby, per-game sessions, `ObjectSync` patches, private-state
   routing, persistence, bots loop, module loading, release install.
 - Chat: persisted lobby and per-game rooms (newest 200 messages per room), history pagination,
-  membership checks, rate limiting and the in-app chat panel.
+  membership checks, rate limiting, the in-app chat panel and sound notifications for messages the
+  user is not currently viewing.
 
 Verified: `:api:test`, `:back:compileKotlin`, and an end-to-end run of the 31-step protocol scenario
 against the launcher + CAH module (see `tools/e2e-kotlin.mjs` at the workspace root).
