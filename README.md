@@ -140,3 +140,16 @@ Builds the front, the dual-format plugin jar (`back/core.jar`: class files + `cl
 with `d8`) and packages them into the release zip. Requires `npm` and the Android SDK (`sdk.dir` in
 `local.properties` or `ANDROID_HOME`). IntelliJ IDEA: the shared **Build core release** run
 configuration (`.idea/runConfigurations`) runs the same task.
+
+## Publishing a release
+
+```bash
+gradle publishRelease              # latest release
+gradle publishRelease -PghDraft=true  # draft for review
+```
+
+Runs `releaseBuild`, then uses the GitHub CLI to push the local `v<version>` tag (the version comes
+from that tag) and create the GitHub release with generated notes and the core zip as its only asset.
+Requires `gh` installed and authenticated (`gh auth login` or `GH_TOKEN`), a clean working tree, and
+`HEAD` at the release tag. Draft releases are not returned by GitHub's latest-release endpoint, so the
+launcher will not pick them up until published.
