@@ -13,6 +13,12 @@
         <o-tag :variant="connectStatusSeverity">
             {{ connectStatusText }}
         </o-tag>
+        <div class="chat-header-button">
+            <o-button icon-left="chat-outline" :aria-label="t('chat')" @click="toggleChat()"></o-button>
+            <span v-if="chatStore.totalUnread > 0" class="chat-unread-badge">
+                {{ chatStore.totalUnread > 99 ? '99+' : chatStore.totalUnread }}
+            </span>
+        </div>
         <o-button v-if="isGameRoute" icon-right="chart-box" @click="memoryLocalStore.showStatistics = true"></o-button>
         <o-button icon-right="share-variant-outline" @click="showHideQrCode()" />
         <o-dialog v-model:active="qrCodeActive" bodyClass="qr-dialog-body-class" fullscreen>
@@ -34,11 +40,14 @@ import { computed, ref, useTemplateRef } from "vue";
 import { useI18n } from 'vue-i18n';
 import { useRoute } from 'vue-router';
 import { useLocalStore, useMemoryLocalStore } from '../services/localStore';
+import { useChatStore } from '../services/chatStore';
+import { toggleChat } from '../services/chatService';
 import { buildShareUrl, resolveShareBaseUrl } from '../services/shareUrl';
 import SettingsDialog from './SettingsDialog.vue';
 
 const memoryLocalStore = useMemoryLocalStore();
 const localStore = useLocalStore()
+const chatStore = useChatStore()
 
 const { t } = useI18n({
     locale: 'en',
@@ -46,6 +55,7 @@ const { t } = useI18n({
         en: {
             games: 'Games',
             adminGames: 'Admin Games',
+            chat: 'Chat',
             connectStatus: {
                 [ConnectStatus.CONNECTED]: 'Connected',
                 [ConnectStatus.CONNECTING]: 'Connecting',
@@ -55,6 +65,7 @@ const { t } = useI18n({
         ru: {
             games: 'Игры',
             adminGames: 'Админка Игры',
+            chat: 'Чат',
             connectStatus: {
                 [ConnectStatus.CONNECTED]: 'Подключено',
                 [ConnectStatus.CONNECTING]: 'Подключение',
@@ -105,6 +116,26 @@ const connectStatusSeverity = computed(() => {
 </script>
 
 <style>
+.chat-header-button {
+    position: relative;
+    display: inline-flex;
+}
+
+.chat-unread-badge {
+    position: absolute;
+    top: -0.35rem;
+    right: -0.35rem;
+    min-width: 1.1rem;
+    padding: 0 0.25rem;
+    border-radius: 1rem;
+    background-color: #d32f2f;
+    color: #fff;
+    font-size: 0.65rem;
+    line-height: 1.1rem;
+    text-align: center;
+    pointer-events: none;
+}
+
 .qr-dialog-body-class {
     height: 100%;
 }

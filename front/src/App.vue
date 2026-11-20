@@ -4,11 +4,13 @@
     <main class="mt-2 scroll-container">
       <RouterView />
     </main>
+    <ChatPanel />
   </div>
 </template>
 
 <script setup lang="ts">
 import Header from './components/Header.vue';
+import ChatPanel from './components/ChatPanel.vue';
 import { useLocalStore } from './services/localStore'
 import { v4 as uuidv4 } from 'uuid'
 import { useI18n } from 'vue-i18n'

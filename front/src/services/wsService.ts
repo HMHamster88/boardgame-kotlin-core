@@ -1,6 +1,11 @@
 import {
     type AdminGameMessageResponse,
     type AllGamesResponse,
+    type ChatErrorResponse,
+    type ChatHistoryRequest,
+    type ChatHistoryResponse,
+    type ChatMessageReceived,
+    type ChatSendRequest,
     ConnectStatus,
     type CrateGameBackupMessage,
     type CreateGameProps,
@@ -31,6 +36,7 @@ import {
     WebsocketEvent,
 } from "websocket-ts";
 import { useLocalStore, useMemoryLocalStore } from "./localStore";
+import { useChatStore } from "./chatStore";
 
 
 class WsService {
@@ -74,7 +80,8 @@ class WsService {
             handshakeResolved = resolve
         })
 
-        type messageTypes = HandshakeResponse | AllGamesResponse | GameCreatedMessage | GameDeletedMessage | AdminGameMessageResponse
+        type messageTypes = HandshakeResponse | AllGamesResponse | GameCreatedMessage | GameDeletedMessage | AdminGameMessageResponse |
+            ChatMessageReceived | ChatHistoryResponse | ChatErrorResponse
         const handlers: MesasgeHandlers<messageTypes> = {
             HandshakeResponse: async (message: HandshakeResponse) => {
                 localStore.user = message.user
@@ -95,6 +102,15 @@ class WsService {
                     this.adminGamePromiseResolve(message.fullGameData)
                     this.adminGamePromiseResolve = undefined
                 }
+            },
+            ChatMessageReceived: async (message: ChatMessageReceived) => {
+                useChatStore().receiveMessage(message.message)
+            },
+            ChatHistoryResponse: async (message: ChatHistoryResponse) => {
+                useChatStore().receiveHistory(message)
+            },
+            ChatErrorResponse: async (message: ChatErrorResponse) => {
+                useChatStore().receiveError(message)
             }
         }
 
@@ -157,6 +173,26 @@ class WsService {
 
     getAllGames() {
         this.sendMessage<GetAllGamesRequest>({ type: 'GetAllGamesRequest' })
+    }
+
+    sendChat(requestId: string, roomId: string, text: string, clientMessageId: string) {
+        this.sendMessage<ChatSendRequest>({
+            type: 'ChatSendRequest',
+            id: requestId,
+            roomId,
+            text,
+            clientMessageId
+        })
+    }
+
+    requestChatHistory(roomId: string, beforeSeq?: number, limit?: number) {
+        this.sendMessage<ChatHistoryRequest>({
+            type: 'ChatHistoryRequest',
+            id: uuidv4(),
+            roomId,
+            beforeSeq,
+            limit
+        })
     }
 
     async getAdminGame(gameId: string): Promise<FullGameData> {

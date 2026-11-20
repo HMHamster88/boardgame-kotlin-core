@@ -10,6 +10,9 @@ object MessageTypes {
     const val GET_ADMIN_GAME = "GetAdminGameMessage"
     const val UPDATE_FULL_GAME_DATA = "UpdateFullGameDataMessage"
 
+    const val CHAT_SEND = "ChatSendRequest"
+    const val CHAT_HISTORY = "ChatHistoryRequest"
+
     const val JOIN_GAME = "JoinGameMessage"
     const val START_GAME = "StartGameMessage"
     const val GAME_ACTION = "GameActionMessage"

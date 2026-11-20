@@ -18,6 +18,58 @@ export interface AllGamesResponse {
     games: Game[]
 }
 
+export interface ChatErrorResponse {
+    type: 'ChatErrorResponse'
+    id?: string
+    code: string
+    message: string
+}
+
+export interface ChatHistoryRequest {
+    type: 'ChatHistoryRequest'
+    id?: string
+    roomId: string
+    beforeSeq?: number
+    limit?: number
+}
+
+export interface ChatHistoryResponse {
+    type: 'ChatHistoryResponse'
+    id?: string
+    roomId: string
+    messages: ChatMessage[]
+    hasMore: boolean
+}
+
+export interface ChatMessage {
+    id: string
+    roomId: string
+    seq: number
+    userId: string
+    userName: string
+    userColor: string
+    text: string
+    createdAt: string
+    kind: ChatMessageKind
+    clientMessageId?: string
+    deleted: boolean
+}
+
+export type ChatMessageKind = 'USER' | 'SYSTEM'
+
+export interface ChatMessageReceived {
+    type: 'ChatMessageReceived'
+    message: ChatMessage
+}
+
+export interface ChatSendRequest {
+    type: 'ChatSendRequest'
+    id?: string
+    roomId: string
+    text: string
+    clientMessageId?: string
+}
+
 export interface ConnectToGameMessage {
     type: 'ConnectToGameMessage'
     gameId: string

@@ -2,6 +2,12 @@ package boardgame.core
 
 import boardgame.api.AllGamesResponse
 import boardgame.api.AdminGameMessageResponse
+import boardgame.api.ChatErrorResponse
+import boardgame.api.ChatHistoryRequest
+import boardgame.api.ChatHistoryResponse
+import boardgame.api.ChatMessageReceived
+import boardgame.api.ChatRoomIds
+import boardgame.api.ChatSendRequest
 import boardgame.api.Game
 import boardgame.api.GameBackModule
 import boardgame.api.GameBackService
@@ -55,6 +61,13 @@ class CoreImpl(private val host: HostServices) : GameCore {
 
     private val storage get() = host.storage
 
+    private val chat = ChatService(
+        storage = host.storage,
+        userProvider = { id ->
+            host.storage.get("users", id)?.let { runCatching { decodeFromJson<User>(it) }.getOrNull() }
+        }
+    )
+
     init {
         loadInstalledModules()
         ensureDefaultGameModules()
@@ -81,6 +94,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
         if (peers[peer.userId] !== peer) return
         peers.remove(peer.userId)
         peerGames.remove(peer.userId)?.let { gameId -> sessions[gameId]?.detach(peer) }
+        chat.forgetUser(peer.userId)
     }
 
     override fun gameModules(): List<GameModuleInfo> = modules.values.sortedBy { it.type }
@@ -104,6 +118,15 @@ class CoreImpl(private val host: HostServices) : GameCore {
             MessageTypes.CONNECT_TO_GAME -> connectToGame(peer, message)
             MessageTypes.GET_ADMIN_GAME -> adminGame(peer, message)
             MessageTypes.UPDATE_FULL_GAME_DATA -> updateFullGameData(peer, message)
+            MessageTypes.CHAT_SEND -> {
+                chatSend(peer, message)
+                return
+            }
+
+            MessageTypes.CHAT_HISTORY -> {
+                chatHistory(peer, message)
+                return
+            }
         }
 
         // A session sees every message from its peers too, like the TS implementation.
@@ -130,6 +153,7 @@ class CoreImpl(private val host: HostServices) : GameCore {
         storage.delete("games", gameId)
         storage.delete("game_settings", gameId)
         storage.delete("game_states", gameId)
+        chat.deleteRoom(ChatRoomIds.game(gameId))
         sessions.remove(gameId)?.shutdown()
         broadcast(GameDeletedMessage(gameId = gameId))
     }
@@ -176,6 +200,65 @@ class CoreImpl(private val host: HostServices) : GameCore {
         }
         scope.launch { session.updateFullGameData(data) }
         send(peer, UpdateFullGameDataResponse(id = id, error = null))
+    }
+
+    // ---------------------------------------------------------------- chat
+
+    private suspend fun chatSend(peer: Peer, message: JsonObject) {
+        val request = runCatching { decodeTree<ChatSendRequest>(message) }.getOrNull()
+        if (request == null) {
+            send(peer, ChatErrorResponse(id = message.str("id"), code = "INVALID_MESSAGE", message = "invalid chat payload"))
+            return
+        }
+        if (!canAccessChatRoom(peer, request.roomId)) {
+            send(peer, ChatErrorResponse(id = request.id, code = "ROOM_FORBIDDEN", message = "you are not in this chat room"))
+            return
+        }
+        try {
+            val chatMessage = chat.post(request.roomId, peer.userId, request.text, request.clientMessageId)
+            broadcastChat(request.roomId, ChatMessageReceived(message = chatMessage))
+        } catch (error: ChatException) {
+            send(peer, ChatErrorResponse(id = request.id, code = error.code, message = error.message))
+        }
+    }
+
+    private suspend fun chatHistory(peer: Peer, message: JsonObject) {
+        val request = runCatching { decodeTree<ChatHistoryRequest>(message) }.getOrNull()
+        if (request == null) {
+            send(peer, ChatErrorResponse(id = message.str("id"), code = "INVALID_MESSAGE", message = "invalid chat payload"))
+            return
+        }
+        if (!canAccessChatRoom(peer, request.roomId)) {
+            send(peer, ChatErrorResponse(id = request.id, code = "ROOM_FORBIDDEN", message = "you are not in this chat room"))
+            return
+        }
+        val page = chat.history(request.roomId, request.beforeSeq, request.limit)
+        send(
+            peer,
+            ChatHistoryResponse(
+                id = request.id,
+                roomId = request.roomId,
+                messages = page.messages.toMutableList(),
+                hasMore = page.hasMore
+            )
+        )
+    }
+
+    private fun canAccessChatRoom(peer: Peer, roomId: String): Boolean {
+        if (roomId == ChatRoomIds.LOBBY) return true
+        val gameId = ChatRoomIds.gameId(roomId) ?: return false
+        return peerGames[peer.userId] == gameId
+    }
+
+    private fun chatPeers(roomId: String): Collection<Peer> {
+        if (roomId == ChatRoomIds.LOBBY) return peers.values
+        val gameId = ChatRoomIds.gameId(roomId) ?: return emptyList()
+        return peers.values.filter { peerGames[it.userId] == gameId }
+    }
+
+    private inline fun <reified T> broadcastChat(roomId: String, value: T) {
+        val text = encodeToJson(value)
+        chatPeers(roomId).forEach { it.send(text) }
     }
 
     // ---------------------------------------------------------------- sessions
